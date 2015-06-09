@@ -22,25 +22,86 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
+function checkedUser(req, res, callback) {
+  var username = req.body.username;
+  var password = req.body.password;
+  new User({ username: username, password: password })
+  .fetch().then(function(found) {
+    if (found) {
+      callback();
+    }
+    else{
+      res.redirect('/login');
+    }
+  });
+}
 
-app.get('/', 
-function(req, res) {
-  res.render('index');
-});
 
-app.get('/create', 
-function(req, res) {
-  res.render('index');
-});
 
-app.get('/links', 
-function(req, res) {
-  Links.reset().fetch().then(function(links) {
-    res.send(200, links.models);
+app.get('/', function(req, res) {
+  checkedUser(req, res, function(){
+    res.redirect(loc);
   });
 });
 
-app.post('/links', 
+app.get('/create', function(req, res) {
+  checkedUser(req, res, function(){
+   res.redirect(loc);
+ });
+});
+
+app.get('/links', function(req, res) {
+  checkedUser(req, res, function(){
+    Links.reset().fetch().then(function(links) {
+      res.send(200, links.models);
+
+    });
+  });
+});
+
+app.get('/login', function(req, res){
+  res.render('login');
+});
+
+app.get('/signup', function(req, res){
+
+  res.render('login');
+});
+
+app.post('/login', function(req, res){
+  var username = req.body.username;
+  var password = req.body.password;
+  new User({ username: username, password: password })
+  .fetch().then(function(found) {
+    if (found) {
+      res.redirect('/');
+    }
+    else{
+      res.redirect('/login');
+    }
+  });
+});
+
+
+app.post('/signup',
+function(req, res) {
+  var username = req.body.username;
+  var password = req.body.password;
+  console.log("User : "+username);
+
+  var user = new User({
+    username: username,
+    password: password
+  });
+  user.save().then(function(newUser) {
+    Users.add(newUser);
+    res.send(200, newUser);
+  });
+
+  res.redirect('/');
+});
+
+app.post('/links',
 function(req, res) {
   var uri = req.body.url;
 
@@ -86,8 +147,10 @@ function(req, res) {
 // If the short-code doesn't exist, send the user to '/'
 /************************************************************/
 
+
 app.get('/*', function(req, res) {
   new Link({ code: req.params[0] }).fetch().then(function(link) {
+
     if (!link) {
       res.redirect('/');
     } else {

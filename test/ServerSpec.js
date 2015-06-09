@@ -201,9 +201,9 @@ describe('', function() {
           'method': 'GET',
           'uri': 'http://127.0.0.1:4568/links'
         };
-        db.knex('urls').select('url').then(function(url){
-          console.log(url);
-        });
+        // db.knex('urls').select('url').then(function(url){
+        //   console.log(url);
+        // });
 
         requestWithSession(options, function(error, res, body) {
           expect(body).to.include('"title":"Rofl Zoo - Daily funny animal pictures"');
@@ -311,8 +311,6 @@ describe('', function() {
           'password': 'Phillip'
         }
       };
-
-      console.log(done);
 
       requestWithSession(options, function(error, res, body) {
         expect(res.headers.location).to.equal('/');

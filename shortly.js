@@ -10,8 +10,13 @@ var User = require('./app/models/user');
 var Links = require('./app/collections/links');
 var Link = require('./app/models/link');
 var Click = require('./app/models/click');
+var cookieParser = require('cookie-parser');
+var session = require('express-session');
 
 var app = express();
+
+app.use(cookieParser());
+app.use(session({secret: 'terryjake', cookie:{maxAge: 100000}}));
 
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
@@ -22,50 +27,66 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
+
 function checkedUser(req, res, callback) {
-  var username = req.body.username;
-  var password = req.body.password;
-  new User({ username: username, password: password })
-  .fetch().then(function(found) {
-    if (found) {
-      callback();
-    }
-    else{
-      res.redirect('/login');
-    }
-  });
+  if(req.session.user){
+    callback();
+  }
+  else{
+    res.redirect('/login');
+  }
+  // var username = req.body.username;
+  // var password = req.body.password;
+  // new User({ username: username, password: password })
+  // .fetch().then(function(found) {
+  //   if (found) {
+  //     callback();
+  //   }
+  //   else{
+  //     res.redirect('/login');
+  //   }
+  // });
 }
 
 
 
 app.get('/', function(req, res) {
+  // user = req.session;
   checkedUser(req, res, function(){
-    res.redirect(loc);
+    res.redirect('/');
   });
 });
 
 app.get('/create', function(req, res) {
   checkedUser(req, res, function(){
-   res.redirect(loc);
+   res.redirect('/create');
  });
 });
 
-app.get('/links', function(req, res) {
-  checkedUser(req, res, function(){
-    Links.reset().fetch().then(function(links) {
-      res.send(200, links.models);
-
-    });
-  });
-});
 
 app.get('/login', function(req, res){
   res.render('login');
 });
 
 app.get('/signup', function(req, res){
-
   res.render('login');
+});
+
+app.get('/links', function(req, res) {
+
+  checkedUser(req, res, function(){
+    Links.reset().fetch().then(function(links) {
+      res.send(200, links.models);
+    });
+  });
+});
+
+
+
+app.get('/logout', function(req, res){
+
+  req.session.destroy();
+  res.redirect('/login');
 });
 
 app.post('/login', function(req, res){
@@ -74,6 +95,9 @@ app.post('/login', function(req, res){
   new User({ username: username, password: password })
   .fetch().then(function(found) {
     if (found) {
+      req.session.regenerate(function(err){
+        req.session.user = username
+      });
       res.redirect('/');
     }
     else{
@@ -98,6 +122,9 @@ function(req, res) {
     res.send(200, newUser);
   });
 
+  req.session.regenerate(function(err){
+    req.session.user = username
+  });
   res.redirect('/');
 });
 
